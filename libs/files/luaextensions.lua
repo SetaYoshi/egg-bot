@@ -289,53 +289,67 @@ Misc.fileExists = fs.existsSync
 Misc.readFile = fs.readFileSync
 Misc.writeFile = fs.writeFileSync
 
-
--- Resolves a file in multiple paths
-local resolvelist = {"", "files/", "commands/", "features/", "deps/discordia/libs/"}
-function Misc.resolveFile(d)
-  if type(d) == "string" then	d = {d}	end
-
-	for k, v in ipairs(d) do
-    for p, q in ipairs(resolvelist) do
-			local n = q..v
-		  if Misc.fileExists(n) then
-			  return n
-			elseif Misc.fileExists(n..".lua") then
-				return n..".lua"
-			end
-		end
-  end
-end
-
-local luaLibs = table.map({"discordia", "json", "timer", "fs", "pretty-print"}) --prob needs more included here
 local loadedJSON = {}
-_G.loadFile = function(path)
-	if luaLibs[path] then
-		return require(path)
+function Misc.loadJson(filename)
+	if not loadedJSON[filename] then
+		local t = Misc.jsonToTable(Misc.readFile("libs/files/"..filename))
+		loadedJSON[filename] = t
 	end
-	path = Misc.resolveFile(path)
-
-	if string.endswith(path, '.lua') then
-	  return require("../"..path)
-  elseif string.endswith(path, '.json') then
-		if not loadedJSON[path] then
-			local t = Misc.jsonToTable(Misc.readFile(path))
-			loadedJSON[path] = t
-    end
-		return loadedJSON[path]
-	end
+	return loadedJSON[filename]
 end
 
-_G.saveFile = function(path, data)
-	path = Misc.resolveFile(path)
-	if string.endswith(path, '.json') then
-		if not data then data = loadedJSON[path] end
-		Misc.writeFile(path, Misc.tableToJson(data))
-	end
+function Misc.saveJson(filename, data)
+	if not data then data = loadedJSON[filename] end
+	Misc.writeFile("libs/files/"..filename, Misc.tableToJson(data))
 end
+
+-- gone forever?
+-- -- Resolves a file in multiple paths
+-- local resolvelist = {"", "files/", "commands/", "features/", "deps/discordia/libs/"}
+-- function Misc.resolveFile(d)
+--   if type(d) == "string" then	d = {d}	end
+--
+-- 	for k, v in ipairs(d) do
+--     for p, q in ipairs(resolvelist) do
+-- 			local n = q..v
+-- 		  if Misc.fileExists(n) then
+-- 			  return n
+-- 			elseif Misc.fileExists(n..".lua") then
+-- 				return n..".lua"
+-- 			end
+-- 		end
+--   end
+-- end
+
+-- local luaLibs = table.map({"discordia", "json", "timer", "fs", "pretty-print"}) --prob needs more included here
+-- local loadedJSON = {}
+-- _G.loadFile = function(path)
+-- 	if luaLibs[path] then
+-- 		return require(path)
+-- 	end
+-- 	path = Misc.resolveFile(path)
+--
+-- 	if string.endswith(path, '.lua') then
+-- 	  return require("../"..path)
+--   elseif string.endswith(path, '.json') then
+-- 		if not loadedJSON[path] then
+-- 			local t = Misc.jsonToTable(Misc.readFile(path))
+-- 			loadedJSON[path] = t
+--     end
+-- 		return loadedJSON[path]
+-- 	end
+-- end
+--
+-- _G.saveFile = function(path, data)
+-- 	path = Misc.resolveFile(path)
+-- 	if string.endswith(path, '.json') then
+-- 		if not data then data = loadedJSON[path] end
+-- 		Misc.writeFile(path, Misc.tableToJson(data))
+-- 	end
+-- end
 
 -- Aliases
-local lunajson = loadFile("json")
+local lunajson = require("json")
 Misc.tableToJson = lunajson.encode
 Misc.jsonToTable = lunajson.decode
 
@@ -352,7 +366,7 @@ function Misc.getContent(m, lowercase)
 	return s
 end
 
-local perserverJSON = loadFile("perserver.json")
+local perserverJSON = Misc.loadJson("perserver.json")
 function Misc.getPrefix(guildID)
 	if type(guildID) == "table" then guildID = (guildID.guild or {}).id end
 	local t = perserverJSON[guildID]
@@ -599,7 +613,7 @@ end
 
 	Misc.replyEmbed(messageObj, "My message") -- defaults the channel of that of the message
 	Misc.replyEmbed(messageObj, data) -- data can also be a table with all your settings
-	Misc.replyEmbed(data)  -- you can also ignore the message shortcut and just od this
+	Misc.replyEmbed(data)  -- you can also ignore the message shortcut and just do this
 
 	data:
 	- channel [m.channel]

@@ -10,10 +10,10 @@ command.desc = table.join({
 command.trigger = {"apod", "nasa"}
 
 local sendEmbed = Misc.embedBuild(command)
-local http = loadFile("deps/coro-http")
+local http = require("coro-http")
 
 local baseURL = "https://api.nasa.gov/planetary/apod"
-local appID = loadFile("token").NASA
+local appID = require("files/token").NASA
 
 -- Request an apod object for today. If a date is specified, then return the APOD for that day
 local function requestAPOD(date)

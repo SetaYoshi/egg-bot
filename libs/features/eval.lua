@@ -7,7 +7,7 @@ feature.name = "Eval"
 feature.desc = "-"
 feature.onCommandType = "ignore"
 
-local inspect = loadFile("inspect")
+local inspect = require("files/inspect")
 
 local logger = {}
 logger.buffer = ""

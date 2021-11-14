@@ -13,7 +13,7 @@ command.desc = table.join({
 command.trigger = {"tag", "taglist", "show"}
 
 local sendEmbed = Misc.embedBuild(command)
-local perserver = loadFile("perserver.json")
+local perserver = Misc.loadJson("perserver.json")
 
 -- Returns the name of a tag given a message. Intended use for tagdisplay feature
 function Misc.getTagName(m, lowercase)
@@ -48,7 +48,7 @@ end
 function addTag.actions.newtag(m, name, text)
   local tagList = perserver[m.guild.id].tags
   tagList[name] = {list = {text}, authorId = m.author.id, created = m.timestamp}
-  saveFile("perserver.json")
+  Misc.saveJson("perserver.json")
   sendEmbed(m, "The `"..name.."` tag has been created.\nYou can add more options to the tag via:\n`"..Misc.getPrefix(guildId).."tag add "..name.." <text>`\nYou can use you tag via:\n`"..Misc.getPrefix(guildId)..Misc.getPrefix(guildId)..name.."`")
 end
 
@@ -56,7 +56,7 @@ function addTag.actions.newoption(m, name, text)
   local tagList = perserver[m.guild.id].tags
   local tag = tagList[name]
   table.insert(tag.list, text)
-  saveFile("perserver.json")
+  Misc.saveJson("perserver.json")
   sendEmbed(m, "Option added! The `"..name.."` tag now has "..#tagList[name].list.." options!")
 end
 
@@ -96,14 +96,14 @@ end
 function removeTag.actions.deletetag(m, name, option)
   local tagList = perserver[m.guild.id].tags
   tagList[name] = nil
-  saveFile("perserver.json")
+  Misc.saveJson("perserver.json")
   sendEmbed(m, "The `"..name.."` tag has been deleted.")
 end
 
 function removeTag.actions.deleteoption(m, name, option)
   local tag = perserver[m.guild.id].tags[name]
   table.remove(tag.list, option)
-  saveFile("perserver.json")
+  Misc.saveJson("perserver.json")
   sendEmbed(m, "Option ("..option..") has been removed succesfully.")
 end
 

@@ -10,7 +10,7 @@ command.desc = table.join({
 command.trigger = {"commander"}
 
 local sendEmbed = Misc.embedBuild(command)
-local perserverJSON = loadFile("perserver.json")
+local perserverJSON = Misc.loadJson("perserver.json")
 
 -- You can add extra Misc functions in command files too!
 -- Checks if a member has a commander role
@@ -43,7 +43,7 @@ command.onCommand = function(m)
         end
       end
       sendEmbed(m, output)
-      saveFile("perserver.json")
+      Misc.saveJson("perserver.json")
     end
   else
     local role = Misc.findRoleID(m.guild, param)
@@ -56,7 +56,7 @@ command.onCommand = function(m)
         table.insert(commanderList, role)
         sendEmbed(m, "Role added")
       end
-      saveFile("perserver.json")
+      Misc.saveJson("perserver.json")
     else
       sendEmbed(m, "Role not found")
     end

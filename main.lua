@@ -103,11 +103,11 @@
 ]]
 
 
-local ext = require('./files/luaextensions.lua') -- Load all helpful extensions
-local discordia = loadFile('discordia')
+local ext = require('files/luaextensions.lua') -- Load all helpful extensions
+local discordia = require('discordia')
 local client = discordia.Client()
 local prefix = "!"  -- Default prefix. The bot will use this prefix in DMs and when joining a server
-local token = loadFile("token").DISCORD
+local token = require("files/token").DISCORD
 
 
 -- Store the client so commands have access to it
@@ -117,8 +117,8 @@ Misc.type = Misc.class.type
 Misc.client = client
 Misc.defaultPrefix = prefix
 
-local fs = loadFile("fs")
-local perserver = loadFile("perserver.json")
+local fs = require("fs")
+local perserver = Misc.loadJson("perserver.json")
 
 -- Ensures that the guildID has proper perserver data, if not then default it
 local function perserverCheck(guildID)
@@ -134,17 +134,17 @@ Misc.commands = {}
 Misc.commandsMAP = {}
 local commands = Misc.commands
 local commandsMAP = Misc.commandsMAP
-local commandFileList = fs.readdirSync("./commands")
+local commandFileList = fs.readdirSync("libs/commands/")
 
 -- Table of features
 Misc.features = {}
 local features = Misc.features
-local featureFileList = fs.readdirSync("./features")
+local featureFileList = fs.readdirSync("libs/features/")
 
 
 -- Load in and organize all commands
 for k, v in ipairs(commandFileList) do
-  local module = loadFile(v)
+  local module = require("commands/"..v)
 
   -- commands is a list of commands
   table.insert(commands, module)
@@ -158,7 +158,7 @@ end
 
 -- Load in and organize all features
 for k, v in ipairs(featureFileList) do
-  local module = loadFile(v)
+  local module = require("features/"..v)
 
   -- features is a list of features
   table.insert(features, module)
@@ -217,7 +217,7 @@ client:on('ready', function()
   for k in pairs(client.guilds) do
     perserverCheck(k)
   end
-  saveFile("perserver.json")
+  Misc.saveJson("perserver.json")
 end)
 
 -- Emitted when a text channel message is created.
@@ -266,7 +266,7 @@ client:on('guildCreate', function(guild)
 
   -- Set the defaults of the server
   perserverCheck(guild.id)
-  saveFile("perserver.json")
+  Misc.saveJson("perserver.json")
 end)
 
 -- Emitted when a new user joins a guild.

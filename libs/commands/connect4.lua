@@ -12,8 +12,8 @@ command.iconURL = "https://cdn.discordapp.com/attachments/664534457679740948/744
 command.trigger = {"connect", "con"}
 
 local sendEmbed = Misc.embedBuild(command)
-local timer = loadFile("timer")
-local connectJSON = loadFile("connect.json")
+local timer = require("timer")
+local connectJSON = Misc.loadJson("connect.json")
 
 local gameList = {}
 
@@ -62,11 +62,11 @@ local function finishGame(game, type)
   if type == "win" then
     connectJSON[player1].win = connectJSON[player1].win + 1
     connectJSON[player2].lose = connectJSON[player2].lose + 1
-    saveFile("connect.json")
+    Misc.saveJson("connect.json")
   elseif type == "tie" then
     connectJSON[player1].tie = connectJSON[player1].tie + 1
     connectJSON[player2].tie = connectJSON[player2].tie + 1
-    saveFile("connect.json")
+    Misc.saveJson("connect.json")
   end
 
   gameList[game.channelId] = nil
@@ -300,15 +300,15 @@ command.onCommand = function(m)
   local channelID = m.channel.id
 
   if subcommand == "play" then
-    local game = gameList[m.channel.id]
+    local game = gameList[channelID]
     local result = playGame(m, game)
 
-  elseif table.isearch({"deny", "forfeit"}, subcommand) then
-    local game = gameList[m.channel.id]
+  elseif table.isearch({"deny", "forfeit", "quit"}, subcommand) then
+    local game = gameList[channelID]
     local result = denyGame(m, game)
 
   elseif subcommand == "drop" or tonumber(subcommand) then
-    local game = gameList[m.channel.id]
+    local game = gameList[channelID]
     local column = tonumber(subcommand) or tonumber(Misc.getParametersLC(m, 2))
     local result = dropGame(m, game, column)
 

@@ -9,7 +9,7 @@ command.desc = table.join({
 command.trigger = {"ping", "pong", "test"}
 
 local sendEmbed = Misc.embedBuild(command)
-local Time = loadFile("utils/Time")
+local Time = Misc.discordia.Time
 
 -- Returns the ping time of a message object
 local function getPing(m)

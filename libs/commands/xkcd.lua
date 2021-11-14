@@ -11,7 +11,7 @@ command.desc = table.join({
 command.trigger = {"xkcd", "kxcd", "comic"}
 
 local sendEmbed = Misc.embedBuild(command)
-local http = loadFile("deps/coro-http")
+local http = require("coro-http")
 
 local baseURL = "https://xkcd.com/"
 

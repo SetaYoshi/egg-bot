@@ -5,7 +5,7 @@ command.info = "Change the prefix for the server"
 command.desc = "Change the prefix for the server. The prefix for the tags will be the prefix twice. The prefix must be a single character"
 command.trigger = {"prefix", "setprefix"}
 
-local perserverJSON = loadFile("perserver.json")
+local perserverJSON = Misc.loadJson("perserver.json")
 
 command.onCommand = function(m)
   local subcommand = Misc.getParameterLC(m, 1)
@@ -14,7 +14,7 @@ command.onCommand = function(m)
     m:reply('this command is for servers only')
   elseif subcommand and Misc.isCommander(m.guild, m.member) then
     perserverJSON[m.guild.id].prefix = string.sub(subcommand, 1, 1)
-    saveFile("perserver.json")
+    Misc.saveJson("perserver.json")
     m:reply('Prefix has been changed')
   else
     m:reply('nah')
