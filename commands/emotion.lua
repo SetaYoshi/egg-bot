@@ -8,6 +8,7 @@ command.desc = table.join({
                           }, "\n")
 command.trigger = {"emotion", "mood"}
 
+local sendEmbed = Misc.embedBuild(command)
 
 -- Returns the URL to a random emoji
 local function randomEmoji()
@@ -19,7 +20,7 @@ local function randomEmoji()
 end
 
 command.onCommand = function(m)
-  Misc.replyEmbed(m, command, {image = randomEmoji()})
+  sendEmbed(m, {imageURL = randomEmoji()})
 end
 
 return command

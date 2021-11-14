@@ -10,12 +10,12 @@ command.desc = table.join({
 command.trigger = {"help", "list", "commands", "cmd", "cmds"}
 command.hidden = true
 
-
+local sendEmbed = Misc.embedBuild(command)
 local iQuestion = "https://i.imgur.com/HU76y34.png"
 
 -- This is a special modification! the viaPing parameter is meant for the helpping feature
 command.onCommand = function(m, viaPing)
-  local subcommand = Misc.getSubcommandName(m)
+  local subcommand = Misc.getParameterLC(m, 1)
   local prefix = Misc.getPrefix(m)
 
   if subcommand and not viaPing then
@@ -27,11 +27,11 @@ command.onCommand = function(m, viaPing)
       local desc = helpcommand.desc
       desc = string.gsub(desc, "{prefix}", prefix)
       local output = "**"..helpcommand.name.."** - "..helpcommand.info.."\n**Triggers:** "..table.join(helpcommand.trigger, ", ").."\n\n"..desc
-      local icon = helpcommand.icon or iQuestion
-      Misc.replyEmbed(m, command, {title = "Eggs Help!", text = output, icon = icon, footer = "Do "..prefix.."help for a list of all commands"})
+      local icon = helpcommand.iconURL or iQuestion
+      sendEmbed(m, {title = "Eggs Help!", text = output, iconURL = icon, footer = "Do "..prefix.."help for a list of all commands"})
     else
       local output = "Command not found"
-      Misc.replyEmbed(m, command, {title = "Eggs Help!", text = output, icon = iQuestion, footer = "Do "..prefix.."help for a list of all commands"})
+      sendEmbed(m, {title = "Eggs Help!", text = output, iconURL = iQuestion, footer = "Do "..prefix.."help for a list of all commands"})
     end
   else
     -- Show the list of all commands
@@ -42,7 +42,7 @@ command.onCommand = function(m, viaPing)
       end
     end
     output = "To use a command: `"..prefix.."CommandTrigger`\nTo use a tag: `"..prefix..prefix.."TagName`\n\nCommand list:\n"..output.."\nDo `"..prefix.."help <command>` for a more in-depth help\nDo `"..prefix.."taglist` for a list of tags"
-    Misc.replyEmbed(m, command, {title = "Eggs Help!", text = output, icon = iQuestion, footer = "Did I do good?"})
+    sendEmbed(m, {title = "Eggs Help!", text = output, iconURL = iQuestion, footer = "Did I do good?"})
   end
 end
 

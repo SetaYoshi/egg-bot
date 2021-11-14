@@ -9,6 +9,7 @@ command.desc = table.join({
                           }, "\n")
 command.trigger = {"apod", "nasa"}
 
+local sendEmbed = Misc.embedBuild(command)
 local http = loadFile("deps/coro-http")
 
 local baseURL = "https://api.nasa.gov/planetary/apod"
@@ -24,28 +25,31 @@ local function requestAPOD(date)
 
   local _, body = http.request("GET", url)
   if body then
-    return Misc.JsonToTable(body)
+    return Misc.jsonToTable(body)
   end
 end
 
 -- Print an error message is a request is not returned
-local function printError(m)
-  Misc.replyEmbed(m, command, "Something went wrong :(")
+local function printError(m, s)
+  s = s or ""
+  sendEmbed(m, "Something went wrong :(\n"..s)
 end
 
 
 command.onCommand = function(m)
-  local param = table.join(Misc.getParameters(m, false, true), " ")
+  local param = Misc.getParametersLC(m)
+  print(param)
 
   local apod = requestAPOD(param)
-  if not apod then printError(m) return end
+  if apod and apod.code == 400 then printError(m, "Date `"..param.."` does not match format YYYY-MM-DD") return end
+  if not apod or not apod.explanation then printError(m) return end
 
-  local text = "__"..apod.title.."__ "..apod.date.."\n"
+  local text = "__"..apod.title.."__ "..(apod.date or "").."\n"
   if apod.copyright then
     text = text.."©*"..apod.copyright.."*"
   end
-  Misc.replyEmbed(m, command, {title = "NASA's Astronomy Picture of the Day", text = text, image = apod.hdurl})
-  Misc.replyEmbed(m, command, {title = "NASA's Astronomy Picture of the Day", text = apod.explanation}) -- Split into two since its too long
+  sendEmbed(m, {title = "NASA's Astronomy Picture of the Day", text = text, imageURL = (apod.hdurl or apod.url)})
+  sendEmbed(m, {title = "NASA's Astronomy Picture of the Day", text = apod.explanation}) -- Split into two since its too long
 end
 
 return command

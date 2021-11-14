@@ -49,7 +49,7 @@
   ==============================
   ==== ANATOMY OF A COMMAND ====
   ==============================
-  This is how you should define each command file. Take a look at the ones included to get a feel how a command file works!
+  This is how you should define each command file. Take a look at the ones included to get a feel for how a command file works!
 
   local command = {}
 
@@ -104,7 +104,7 @@
 
 
 local ext = require('./files/luaextensions.lua') -- Load all helpful extensions
-local discordia = require('discordia')
+local discordia = loadFile('discordia')
 local client = discordia.Client()
 local prefix = "!"  -- Default prefix. The bot will use this prefix in DMs and when joining a server
 local token = loadFile("token").DISCORD
@@ -112,10 +112,12 @@ local token = loadFile("token").DISCORD
 
 -- Store the client so commands have access to it
 Misc.discordia = discordia
+Misc.class = Misc.discordia.class
+Misc.type = Misc.class.type
 Misc.client = client
 Misc.defaultPrefix = prefix
 
-
+local fs = loadFile("fs")
 local perserver = loadFile("perserver.json")
 
 -- Ensures that the guildID has proper perserver data, if not then default it
@@ -132,20 +134,13 @@ Misc.commands = {}
 Misc.commandsMAP = {}
 local commands = Misc.commands
 local commandsMAP = Misc.commandsMAP
-
-local commandFileList = {}
-for dir in io.popen([[dir "./commands" /b]]):lines() do
-  table.insert(commandFileList, dir)
-end
+local commandFileList = fs.readdirSync("./commands")
 
 -- Table of features
 Misc.features = {}
 local features = Misc.features
+local featureFileList = fs.readdirSync("./features")
 
-local featureFileList = {}
-for dir in io.popen([[dir "./features" /b]]):lines() do
-  table.insert(featureFileList, dir)
-end
 
 -- Load in and organize all commands
 for k, v in ipairs(commandFileList) do
@@ -205,7 +200,7 @@ local function featureHandler(eventName, ...)
   end
 end
 
--- One to control then all (handlers)
+-- One to control them all (handlers)
 local function botHandler(eventName, ...)
   commandHandler(eventName, ...)
   featureHandler(eventName, ...)
@@ -219,7 +214,7 @@ client:on('ready', function()
 	p(string.format('Logged in as %s', client.user.username))
 
   -- Set the defaults to every server, just in case
-  for k, v in pairs(Misc.client.guilds) do
+  for k in pairs(client.guilds) do
     perserverCheck(k)
   end
   saveFile("perserver.json")
@@ -238,11 +233,11 @@ client:on('messageCreate', function(message)
   for k, v in ipairs(features) do
     if v.onCommandType ~= "ignore" or (not isCommand) then
       local f = v.onMessage
-      local success
-      if f then success = f(message) end
-      if success and v.onCommandType == "override" then
+      local event = {}
+      if f then f(message, event) end
+      if event.success and v.onCommandType == "override" then
         return
-      elseif success then
+      elseif event.success then
         break
       end
     end
@@ -252,7 +247,7 @@ client:on('messageCreate', function(message)
   if not isCommand then	return end
 
   -- Get the command name and command object
-  local triggerName = Misc.getCommandName(message)
+  local triggerName = Misc.getTriggerLC(message)
   local command = commandsMAP[triggerName]
 
   if command then
@@ -260,7 +255,7 @@ client:on('messageCreate', function(message)
     command.onCommand(message)
   else
     -- Otherwise, inform the user they had an incorrect command
-    Misc.replyEmbed(message, {}, {title = "Error", text = "Command not found!\nCheck your spelling.", footer = "Use "..Misc.getPrefix(Misc.getGuildID(message)).."help to see a list of commands"})
+    Misc.replyEmbed(message, {title = "Error", text = "Command not found!\nCheck your spelling.", footer = "Use "..Misc.getPrefix(message).."help to see a list of commands"})
   end
 
 end)

@@ -9,6 +9,7 @@ command.desc = table.join({
                           }, "\n")
 command.trigger = {"commander"}
 
+local sendEmbed = Misc.embedBuild(command)
 local perserverJSON = loadFile("perserver.json")
 
 -- You can add extra Misc functions in command files too!
@@ -19,17 +20,17 @@ function Misc.isCommander(guild, member)
 end
 
 command.onCommand = function(m)
-  local param = table.join(Misc.getParameters(m, false, true), " ")
+  local param = Misc.getParametersLC(m)
   local commanderList = perserverJSON[m.guild.id].commander
 
   if not m.guild then
-    Misc.replyEmbed(m, command, "This command is for servers only")
+    sendEmbed(m, "This command is for servers only")
   elseif m.member ~= m.guild.owner then
-    Misc.replyEmbed(m, command, "This command is for server owners only")
+    sendEmbed(m, "This command is for server owners only")
   elseif param == "list" then
     local commanderCount = #commanderList
     if commanderCount == 0 then
-      Misc.replyEmbed(m, command, "No commander roles have been set")
+      sendEmbed(m, "No commander roles have been set")
     else
       local output = "Commanders:\n"
       for i = commanderCount, 1, -1 do
@@ -41,7 +42,7 @@ command.onCommand = function(m)
           output = output.."\\• ["..role.id.."] @"..role.name.."\n"
         end
       end
-      Misc.replyEmbed(m, command, output)
+      sendEmbed(m, output)
       saveFile("perserver.json")
     end
   else
@@ -50,14 +51,14 @@ command.onCommand = function(m)
       local isFound = table.isearch(commanderList, role)
       if isFound then
         table.remove(commanderList, isFound)
-        Misc.replyEmbed(m, command, "Role removed")
+        sendEmbed(m, "Role removed")
       else
         table.insert(commanderList, role)
-        Misc.replyEmbed(m, command, "Role added")
+        sendEmbed(m, "Role added")
       end
       saveFile("perserver.json")
     else
-      Misc.replyEmbed(m, command, "Role not found")
+      sendEmbed(m, "Role not found")
     end
   end
 end

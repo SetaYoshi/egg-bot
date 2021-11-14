@@ -1,25 +1,14 @@
 --[[ NOTE:
-These standard library extensions are NOT used in Discordia. They are here as a
-convenience for those who wish to use them.
-
 There are multiple ways to implement some of these commonly used functions.
 Please pay attention to the implementations used here and make sure that they
 match your expectations.
-
-You may freely add to, remove, or edit any of the code here without any effect
-on the rest of the library. If you do make changes, do be careful when sharing
-your expectations with other users.
-
-You can inject these extensions into the standard Lua global tables by
-calling either the main module (ex: discordia.extensions()) or each sub-module
-(ex: discordia.extensions.string())
 ]]
 
 local sort, concat = table.sort, table.concat
 local insert, remove = table.insert, table.remove
 local byte, char = string.byte, string.char
 local gmatch, match = string.gmatch, string.match
-local rep, find, sub = string.rep, string.find, string.sub
+local rep, find, sub, lower = string.rep, string.find, string.sub, string.lower
 local min, max, random = math.min, math.max, math.random
 local ceil, floor = math.ceil, math.floor
 
@@ -134,7 +123,7 @@ function table.search(tbl, value)
 end
 
 function table.isearch(tbl, value)
-	for k, v in pairs(tbl) do
+	for k, v in ipairs(tbl) do
 		if v == value then
 			return k
 		end
@@ -261,7 +250,6 @@ function string.levenshtein(str1, str2)
 	end
 
 	return matrix[len1][len2]
-
 end
 
 function string.random(len, mn, mx)
@@ -278,40 +266,29 @@ function math.clamp(n, minValue, maxValue)
 	return min(max(n, minValue), maxValue)
 end
 
+function math.knot(n, minValue, maxValue)
+  if n > maxValue then
+		return minValue
+	elseif n < minValue then
+		return maxValue
+	end
+	return n
+end
+
 function math.round(n, i)
 	local m = 10 ^ (i or 0)
 	return floor(n * m + 0.5) / m
 end
 
+-- Namespace meant to contain a variety of helper functions
 _G.Misc = {}
 
--- Given a path, it will check if a file exists
-function Misc.fileExists(path)
-	local f = io.open(path, "r")
-	if f then
-		io.close(f)
-		return true
-  end
+-- More aliases
+local fs = require("fs")
+Misc.fileExists = fs.existsSync
+Misc.readFile = fs.readFileSync
+Misc.writeFile = fs.writeFileSync
 
-	return false
-end
-
--- Reads a file
-function Misc.readFile(path)
-	local file = io.open(path, "r") -- r read mode and b binary mode
-	if not file then return end
-	local content = file:read("*all") -- *a or *all reads the whole file
-	file:close()
-	return content
-end
-
--- Writes a file
-function Misc.writeFile(path, data)
-  local writefile = io.open(path, "w")
-  if not writefile then return end
-  writefile:write(data)
-  writefile:close()
-end
 
 -- Resolves a file in multiple paths
 local resolvelist = {"", "files/", "commands/", "features/", "deps/discordia/libs/"}
@@ -330,15 +307,19 @@ function Misc.resolveFile(d)
   end
 end
 
+local luaLibs = table.map({"discordia", "json", "timer", "fs", "pretty-print"}) --prob needs more included here
 local loadedJSON = {}
 _G.loadFile = function(path)
+	if luaLibs[path] then
+		return require(path)
+	end
 	path = Misc.resolveFile(path)
 
 	if string.endswith(path, '.lua') then
 	  return require("../"..path)
   elseif string.endswith(path, '.json') then
 		if not loadedJSON[path] then
-			local t = Misc.JsonToTable(Misc.readFile(path))
+			local t = Misc.jsonToTable(Misc.readFile(path))
 			loadedJSON[path] = t
     end
 		return loadedJSON[path]
@@ -349,59 +330,98 @@ _G.saveFile = function(path, data)
 	path = Misc.resolveFile(path)
 	if string.endswith(path, '.json') then
 		if not data then data = loadedJSON[path] end
-		Misc.writeFile(path, Misc.TableToJson(data))
+		Misc.writeFile(path, Misc.tableToJson(data))
 	end
 end
 
+-- Aliases
+local lunajson = loadFile("json")
+Misc.tableToJson = lunajson.encode
+Misc.jsonToTable = lunajson.decode
 
-local lunajson = require("json")
-Misc.TableToJson = lunajson.encode
-Misc.JsonToTable = lunajson.decode
-
-
--- Returns the name of a command given a message
-function Misc.getCommandName(m)
-  return string.sub(string.split(string.lower(m.content), " ")[1], 2)
-end
-
--- Returns the name of a subcommand given a message
-function Misc.getSubcommandName(m, lowercase)
-	local s = string.split(m.content, " ")[2]
-	if not s then return end
-	if lowercase == false then return s end
-	return string.lower(s)
-end
-
--- Returns a list of all messgae's parameters. Set t to true to ignore subcommand. Set l to true to make everything lowercase
-function Misc.getParameters(m, r, l)
-	local s = m.content
-	if l then
-		s = string.lower(s)
+function Misc.getContent(m, lowercase)
+	local s
+	if type(m) == "string" then
+		s = m
+	else
+		s = m.content
 	end
-	local t = string.split(s, " ")
-
-	table.remove(t, 1)
-	if r then
-		for i = 1, r do
-			if #t == 0 then break end
-				table.remove(t, 1)
-		end
+	if lowercase then
+		s = lower(s)
 	end
-	return t or {}
+	return s
 end
 
 local perserverJSON = loadFile("perserver.json")
 function Misc.getPrefix(guildID)
-	if type(guildID) == "table" then guildID = Misc.getGuildID(guildID) end
+	if type(guildID) == "table" then guildID = (guildID.guild or {}).id end
 	local t = perserverJSON[guildID]
 	if t then return t.prefix end
 	return Misc.defaultPrefix
 end
 
-function Misc.getGuildID(m)
-	if m and m.guild then return m.guild.id end
-	return ""
+function Misc.getCommand(m, lowercase)
+	local txt = Misc.getContent(m, lowercase)
+	return string.split(txt, " ")[1]
 end
+
+-- Given a message, it returns the command used (first word without the prefix)
+function Misc.getTrigger(m, lowercase)
+	local txt = Misc.getContent(m, lowercase)
+	return sub(string.split(txt, " ")[1], 2)
+end
+
+-- Returns the parameter at position i
+function Misc.getParameter(m, i, lowercase)
+	local txt = Misc.getContent(m, lowercase)
+  return string.split(txt, " ")[i + 1]
+end
+
+-- Returns a string of parameters at position between position b to f. If b or f are blank, its defaulted to beggining and finish of the mesage respectively
+function Misc.getParameters(m, b, f, lowercase)
+	local txt = Misc.getContent(m, lowercase)
+	local list = string.split(txt, " ")
+	table.remove(list, 1)
+
+	local b = b or 1
+	local f = f or #list
+	local out = {unpack(list, b, f)}
+
+	return table.join(out, " ")
+end
+
+-- Similar to getParameters, except it returns each parameter in a table instead of a string
+function Misc.getParametersList(m, b, f, lowercase)
+	local txt = Misc.getContent(m, lowercase)
+	local list = string.split(txt, " ")
+	table.remove(list, 1)
+
+	local b = b or 1
+	local f = f or #list
+	return {unpack(list, b, f)}
+end
+
+-- These functions work identical to the ones above except they return its contents in lowercase (LC)
+function Misc.getCommandLC(m)
+	return Misc.getCommand(m, true)
+end
+
+function Misc.getTriggerLC(m)
+	return Misc.getTrigger(m, true)
+end
+
+function Misc.getParameterLC(m, i)
+	return Misc.getParameter(m, i, true)
+end
+
+function Misc.getParametersLC(m, b, f)
+	return Misc.getParameters(m, b, f, true)
+end
+
+function Misc.getParametersListLC(m, b, f)
+	return Misc.getParametersList(m, b, f, true)
+end
+
 
 -- Returns the ID of a user. Where s can be an ID, a user name, nickname, or a user mention
 function Misc.findUserID(guild, s)
@@ -416,13 +436,13 @@ function Misc.findUserID(guild, s)
 
 	-- Check if the input is a user mention
 	if string.startswith(s, "<@!") then
-		local id = string.sub(s, 4, -2)
+		local id = sub(s, 4, -2)
 		local user = Misc.getUser(id)
 		if user then
 			return user.id
 		end
 	elseif string.startswith(s, "<@") then
-			local id = string.sub(s, 3, -2)
+			local id = sub(s, 3, -2)
 			local user = Misc.getUser(id)
 			if user then
 				return user.id
@@ -467,7 +487,7 @@ function Misc.findTextChannelID(guild, s)
 
 	-- Check if the input is a channel mention
   if string.startswith(s, "<#") then
-		local id = string.sub(s, 3, -2)
+		local id = sub(s, 3, -2)
 		local channel = guild.textChannels:get(id)
 		if channel then
 			return channel.id
@@ -498,7 +518,7 @@ function Misc.findRoleID(guild, s)
 
 	-- Check if the input is a role mention
 	if string.startswith(s, "<@&") then
-		local id = string.sub(s, 4, -2)
+		local id = sub(s, 4, -2)
 		local role = guild.roles:get(id)
 		if role then
 			return role.id
@@ -534,114 +554,129 @@ function Misc.getRole(id)
 end
 
 function Misc.getMember(id, guild)
+	if type(guild) == "string" then guild = Misc.getGuild(guild) end
 	return guild.members:get(id)
 end
 
 function Misc.getName(id, guild)
 	if guild then
+		if type(guild) == "string" then guild = Misc.getGuild(guild) end
 		local member = Misc.getMember(id, guild)
 		if member then return member.name end
 	end
 	return Misc.getUser(id).username
 end
 
+-- Expose the enum stuff into the Misc class for easy access
+function Misc.enum(class, type)
+	return Misc.discordia.enums[class][type]
+end
 
-local sandbox = {}
-local pp = require('pretty-print')
+function Misc.enumId(class, type)
+	return Misc.discordia.enums[class](type)
+end
 
-local function prettyLine(...)
-	local ret = {}
-	for i = 1, select('#', ...) do
-		local arg = pp.strip(pp.dump(select(i, ...)))
-		table.insert(ret, arg)
+
+local schemeMt = {
+	__call = function(t, ...)
+		local result = t.directory(...)
+		if result and t.actions[result] then
+			t.actions[result](...)
+		end
+		return result
 	end
-	return table.concat(ret, '\t')
-end
+}
 
-local function codeblock(str)
-	return string.format('```\n%s```', str)
-end
-
-local function easyeval(code)
-	return "local f = function() return "..code.." end local x = f() if type(x) == 'table' then for k, v in pairs(x) do p(k..': '..v) end else p('returns '..tostring(x)) end"
-end
-
-function Misc.exec(m, code)
-	if code == "" or m.author ~= Misc.client.owner then return end
-
-	local lines = {}
-	sandbox.m = m
-	sandbox.p = function(...)
-		table.insert(lines, prettyLine(...))
-	end
-	sandbox.print = p
-	sandbox.type = type
-	sandbox.pairs = pairs
-	sandbox.tostring = tostring
-	sandbox.message = m
-	sandbox.Misc = Misc
-
-	code = code:gsub('```\n?', '') -- strip markdown codeblocks
-
-	local fn, syntaxError = load(easyeval(code), 'DiscordBot', 't', sandbox)
-	if not fn then return m:reply(codeblock(syntaxError)) end
-
-	local success, runtimeError = pcall(fn)
-	if not success then return m:reply(codeblock(runtimeError)) end
-
-	lines = table.concat(lines, '\n')
-
-	if #lines > 1990 then -- truncate long messages
-		lines = lines:sub(1, 1990)
-	end
-
-	return m:reply(codeblock(lines))
+function Misc.scheme(logic, actions)
+  local scheme = {actions = {}, directory = function() end}
+	setmetatable(scheme, schemeMt)
+	return scheme
 end
 
 
-function Misc.replyEmbed(m, command, data)
+
+--[[
+
+	Misc.replyEmbed(messageObj, "My message") -- defaults the channel of that of the message
+	Misc.replyEmbed(messageObj, data) -- data can also be a table with all your settings
+	Misc.replyEmbed(data)  -- you can also ignore the message shortcut and just od this
+
+	data:
+	- channel [m.channel]
+	- title [" "]
+	- text [" "]
+	- footer [" "]
+	- color [0x00FF00]
+	- imageURL
+	- iconURL
+	- description (avoid)
+]]
+function Misc.replyEmbed(m, data)
+	if not data then data = m end
 	if type(data) == "string" then data = {text = data} end
-	command = command or {name = "-"}
+  local embed = {}
 
-	--[[
-	  data:
-		  - title
-			- image
-			- icon
-			- text
-			- footer
-			- color
-			- thumbnail
-			- channel
-			- guildID
-			- commandName
-			- description (avoid)
-	]]
 	local channel = data.channel or m.channel
-	local commandName = data.commandName or Misc.getCommandName(m)
-	local guildID = data.guildID or Misc.getGuildID(m)
-	local t = {}
-	t.color = data.color or 0x00FF00
-	data.text = data.text or "⠀"
-	data.title = data.title or command.name
-	if data.description then
-	  t.description = data.description
+
+  data.text = data.text or "⠀"
+	data.title = data.title or " "
+
+  embed.color = data.color or 0x00FF00
+	embed.description = data.description
+	embed.footer = data.footer or "⠀"
+
+	if type(embed.footer) == "string" then
+	  embed.footer = {text = data.footer}
 	end
-	if data.icon then
-		t.thumbnail = {url = data.icon}
+	if data.iconURL then
+		embed.thumbnail = {url = data.iconURL}
 	end
-	if data.image then
-		t.image = {url = data.image}
+	if data.imageURL then
+		embed.image = {url = data.imageURL}
 	end
 
-	t.footer = {text = data.footer or "Do "..Misc.getPrefix(guildID).."help "..commandName.." for more help"}
-	t.fields = {{name = "⠀", value = " \n"..data.text, inline = false}}
-	if data.description then
-		t.title = data.title
+	if embed.description then
+		embed.title = data.title
+	elseif data.fields then
+		embed.fields = {}
+		embed.title = data.title
+		for k, v in ipairs(data.fields) do
+			if type(v) == "string" then
+				table.insert(embed.fields, {name = " ", value = " \n"..v, inline = false})
+			else
+				table.insert(embed.fields, v)
+			end
+		end
 	else
-		t.fields[1].name = data.title
+		embed.fields = {{name = data.title, value = " \n"..data.text, inline = false}}
 	end
-	channel:send{embed = t}
+
+	channel:send{embed = embed}
+end
+
+-- This is a shorcut meant for sending embeds for responses from commands.
+--[[
+  local sendEmbed = Misc.embedBuild(command)
+	...
+	-- The function is flexible! All these calls are valid
+	sendEmbed(messageObj, "I am some text")
+	sendEmbed(messageObj, "I am some text", {footer = "Override the default footer!", iconURL = "https://imgur.com/aIxCWjn.png"})
+	sendEmbed(messageObj, {text = "I am some text", footer = "Override the default footer!", iconURL = "https://imgur.com/aIxCWjn.png"})
+]]
+
+function Misc.embedBuild(command)
+	return function(m, data, dataPlus)
+		if dataPlus then
+			dataPlus.text = data
+			data = dataPlus
+		else
+			if type(data) == "string" then data = {text = data} end
+		end
+		data.title = data.title or command.name
+		data.footer = data.footer or "Do "..Misc.getPrefix(m).."help "..Misc.getTriggerLC(m).." for more help"
+
+		Misc.replyEmbed(m, data)
+	end
 end
 
 return {}

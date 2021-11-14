@@ -8,6 +8,7 @@ command.desc = table.join({
                           }, "\n")
 command.trigger = {"ping", "pong", "test"}
 
+local sendEmbed = Misc.embedBuild(command)
 local Time = loadFile("utils/Time")
 
 -- Returns the ping time of a message object
@@ -16,11 +17,11 @@ local function getPing(m)
 end
 
 command.onCommand = function(m)
-  local name = Misc.getCommandName(m)
+  local name = Misc.getTriggerLC(m)
   if name == "pong" then
-    Misc.replyEmbed(m, command, "Ping! `"..getPing(m).." ms`")
+    sendEmbed(m, "Ping! `"..getPing(m).." ms`")
   else
-    Misc.replyEmbed(m, command, "Pong! `"..getPing(m).." ms`")
+    sendEmbed(m, "Pong! `"..getPing(m).." ms`")
   end
 end
 

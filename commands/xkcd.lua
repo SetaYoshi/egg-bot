@@ -10,6 +10,7 @@ command.desc = table.join({
                           }, "\n")
 command.trigger = {"xkcd", "kxcd", "comic"}
 
+local sendEmbed = Misc.embedBuild(command)
 local http = loadFile("deps/coro-http")
 
 local baseURL = "https://xkcd.com/"
@@ -18,7 +19,7 @@ local baseURL = "https://xkcd.com/"
 local function requestMaxComicId()
   local _, body = http.request("GET", baseURL.."info.0.json")
   if body then
-    local comic = Misc.JsonToTable(body)
+    local comic = Misc.jsonToTable(body)
     return comic.num
   end
 end
@@ -34,24 +35,24 @@ local function requestComic(n)
 
   local _, body = http.request("GET", url)
   if body then
-    return Misc.JsonToTable(body)
+    return Misc.jsonToTable(body)
   end
 end
 
 -- Print an error message is a request is not returned
 local function printError(m)
-  Misc.replyEmbed(m, command, "Oh no! Something went wrong in finding the comic :(")
+  sendEmbed(m, "Oh no! Something went wrong in finding the comic :(")
 end
 
 -- Print the comic with this specific format
 local function printComic(m, comic)
-  Misc.replyEmbed(m, command, {title = comic.safe_title.." ("..comic.num..")", image = comic.img, footer = comic.alt, text = "Published in "..comic.year.."/"..comic.month.."/"..comic.day})
+  sendEmbed(m, {title = comic.safe_title.." ("..comic.num..")", imageURL = comic.img, footer = comic.alt, text = "Published in "..comic.year.."/"..comic.month.."/"..comic.day})
 end
 
 
 
 command.onCommand = function(m)
-  local subcommand = Misc.getSubcommandName(m)
+  local subcommand = Misc.getParameterLC(m, 1)
 
   if not subcommand then -- Random comic
     local maxComicId = requestMaxComicId()
@@ -77,7 +78,7 @@ command.onCommand = function(m)
 
       printComic(m, comic)
     else
-      Misc.replyEmbed(m, command, "Invalid ID! The ID range is from 1 to "..maxComicId)
+      sendEmbed(m, "Invalid ID! The ID range is from 1 to "..maxComicId)
     end
   end
 end

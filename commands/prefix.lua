@@ -8,7 +8,7 @@ command.trigger = {"prefix", "setprefix"}
 local perserverJSON = loadFile("perserver.json")
 
 command.onCommand = function(m)
-  local subcommand = Misc.getSubcommandName(m)
+  local subcommand = Misc.getParameterLC(m, 1)
 
   if not m.guild then
     m:reply('this command is for servers only')

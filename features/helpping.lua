@@ -5,15 +5,11 @@ feature.desc = "@ me to get the help message. Useful for when you forget the bot
 feature.onCommandType = "override"
 
 
-feature.onMessage = function(m)
-  local success
-
+feature.onMessage = function(m, event)
   if m.mentionedUsers.first == Misc.client.user and Misc.commandsMAP[string.sub(string.lower(m.content), 24)] and Misc.commandsMAP[string.sub(string.lower(m.content), 24)].name == "Help" then
-    success = true
+    event.success = true
     Misc.commandsMAP.help.onCommand(m, true)
   end
-
-  return success
 end
 
 return feature
