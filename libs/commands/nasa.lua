@@ -38,7 +38,6 @@ end
 
 command.onCommand = function(m)
   local param = Misc.getParametersLC(m)
-  print(param)
 
   local apod = requestAPOD(param)
   if apod and apod.code == 400 then printError(m, "Date `"..param.."` does not match format YYYY-MM-DD") return end
