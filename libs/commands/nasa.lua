@@ -41,6 +41,8 @@ command.onCommand = function(m)
   local pattern = "%d%d%d%d%-%d%d%-%d%d"
   local date = string.match(param, pattern)
 
+  if param ~= "" and not date then printError(m, "Date `" .. date .. "` does not match format YYYY-MM-DD") return end
+
   local apod = requestAPOD(date)
   if apod and apod.code == 400 then printError(m, "Date `" .. date .. "` does not match format YYYY-MM-DD") return end
   if not apod or not apod.explanation then printError(m) return end
